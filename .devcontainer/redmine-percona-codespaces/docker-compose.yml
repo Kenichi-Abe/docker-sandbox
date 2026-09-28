@@ -1,0 +1,72 @@
+services:
+  db:
+    build:
+      context: ./percona
+      dockerfile: Dockerfile
+    image: redmine-percona:5.7
+    container_name: redmine-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-redmine}
+      MYSQL_USER: ${MYSQL_USER:-redmine}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-redminepass}
+      TZ: ${TZ:-Asia/Tokyo}
+    volumes:
+      - percona-data:/var/lib/mysql
+    ports:
+      - "${PERCONA_PORT:-3306}:3306"
+    command:
+      - mysqld
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --bind-address=0.0.0.0
+      - --skip-name-resolve
+      - --skip-ssl
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  redmine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: redmine-app:4.1.1
+    container_name: redmine-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      TZ: ${TZ:-Asia/Tokyo}
+      REDMINE_DB_MYSQL: host.docker.internal
+      REDMINE_DB_PORT: 3306
+      REDMINE_DB_USERNAME: ${MYSQL_USER:-redmine}
+      REDMINE_DB_PASSWORD: ${MYSQL_PASSWORD:-redminepass}
+      REDMINE_DB_DATABASE: ${MYSQL_DATABASE:-redmine}
+      REDMINE_DB_ENCODING: utf8mb4
+      REDMINE_PLUGINS_MIGRATE: "1"
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-please-change-me-in-codespaces}
+    command:
+      - bash
+      - -c
+      - |
+        mkdir -p /tmp/bin
+        printf '%s\n' '#!/bin/sh' 'if [ "$1" = install ]; then echo skip bundle install; exit 0; fi' 'exec /usr/local/bin/bundle "$@"' > /tmp/bin/bundle
+        chmod +x /tmp/bin/bundle
+        export PATH="/tmp/bin:/usr/local/bundle/bin:/usr/local/bin:/usr/bin:/bin"
+        exec /docker-entrypoint.sh rails server -b 0.0.0.0
+    ports:
+      - "${REDMINE_PORT:-3000}:3000"
+    volumes:
+      - redmine-files:/usr/src/redmine/files
+      - .:/workspaces/redmine
+
+volumes:
+  percona-data:
+  redmine-files:

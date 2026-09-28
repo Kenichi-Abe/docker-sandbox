@@ -1,0 +1,30 @@
+{
+  "name": "Redmine 4.1.1 + Percona 5.7",
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "redmine",
+  "workspaceFolder": "/workspaces/redmine",
+  "shutdownAction": "stopCompose",
+  "forwardPorts": [3000, 3306],
+  "portsAttributes": {
+    "3000": {
+      "label": "Redmine",
+      "onAutoForward": "notify"
+    },
+    "3306": {
+      "label": "Percona 5.7",
+      "onAutoForward": "silent"
+    }
+  },
+  "postCreateCommand": "echo 'Redmine: http://localhost:3000  (admin / admin)'",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": [
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  },
+  "remoteUser": "redmine"
+}

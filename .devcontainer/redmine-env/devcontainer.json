@@ -1,0 +1,18 @@
+{
+  "name": "Redmine Isolated Environment",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "redmine-app",
+  "workspaceFolder": "/usr/src/redmine",
+  
+  // 他のComposeプロジェクトと干渉しないよう一意のプロジェクト名を設定
+  "runServices": ["redmine-app", "redmine-db"],
+  
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rebornix.ruby"
+      ]
+    }
+  },
+  "forwardPorts": [3000]
+}

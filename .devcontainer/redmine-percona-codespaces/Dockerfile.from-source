@@ -1,0 +1,64 @@
+# redmine:4.1.1 が pull できないときの代替
+# 公式 docker-library/redmine 4.1 Dockerfile を簡略化したもの
+FROM ruby:2.6-slim-buster
+
+RUN groupadd -r -g 999 redmine && useradd -r -g redmine -u 999 redmine
+
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        ca-certificates wget \
+        bzr git mercurial openssh-client subversion \
+        ghostscript gsfonts imagemagick \
+        gcc make patch pkg-config \
+        libmariadbclient-dev libpq-dev libsqlite3-dev \
+        libxml2-dev libxslt1-dev zlib1g-dev \
+    ; \
+    rm -rf /var/lib/apt/lists/*
+
+# gosu
+RUN set -eux; \
+    dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')"; \
+    wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/1.16/gosu-$dpkgArch"; \
+    chmod +x /usr/local/bin/gosu; \
+    gosu nobody true
+
+ENV RAILS_ENV=production \
+    HOME=/home/redmine \
+    REDMINE_VERSION=4.1.1 \
+    REDMINE_DOWNLOAD_MD5=a15a25dec7b866e213bbd4b041f05f17
+
+WORKDIR /usr/src/redmine
+
+RUN set -eux; \
+    mkdir -p "$HOME"; \
+    chown redmine:redmine "$HOME"; \
+    chmod 1777 "$HOME"; \
+    wget -O redmine.tar.gz "https://www.redmine.org/releases/redmine-${REDMINE_VERSION}.tar.gz"; \
+    echo "$REDMINE_DOWNLOAD_MD5 *redmine.tar.gz" | md5sum -c -; \
+    tar -xf redmine.tar.gz --strip-components=1; \
+    rm redmine.tar.gz files/delete.me log/delete.me; \
+    mkdir -p log public/plugin_assets sqlite tmp/pdf tmp/pids; \
+    echo 'config.logger = Logger.new(STDOUT)' > config/additional_environment.rb; \
+    chmod -R ugo=rwX config db sqlite; \
+    find log tmp -type d -exec chmod 1777 '{}' +; \
+    chown -R redmine:redmine .
+
+COPY plugins/ /usr/src/redmine/plugins/
+COPY vendor/  /usr/src/redmine/vendor/
+COPY themes/  /usr/src/redmine/public/themes/
+
+RUN set -eux; \
+    printf '%s\n' 'production:' '  adapter: mysql2' > ./config/database.yml; \
+    gosu redmine bundle install --jobs "$(nproc)" --without development test; \
+    rm -f ./config/database.yml; \
+    chown -R redmine:redmine plugins vendor public/themes Gemfile.lock || true
+
+# 公式相当の簡易 entrypoint
+COPY docker-entrypoint.from-source.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+VOLUME /usr/src/redmine/files
+EXPOSE 3000
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["rails", "server", "-b", "0.0.0.0"]

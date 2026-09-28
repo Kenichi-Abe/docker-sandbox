@@ -1,0 +1,67 @@
+services:
+  db:
+    build:
+      context: ./percona
+      dockerfile: Dockerfile
+    image: redmine-percona:5.7
+    container_name: redmine-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-redmine}
+      MYSQL_USER: ${MYSQL_USER:-redmine}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-redminepass}
+      TZ: ${TZ:-Asia/Tokyo}
+    volumes:
+      - percona-data:/var/lib/mysql
+    ports:
+      - "${PERCONA_PORT:-3306}:3306"
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-rootpass}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  redmine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: redmine-app:4.1.1
+    container_name: redmine-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ:-Asia/Tokyo}
+      REDMINE_DB_MYSQL: db
+      REDMINE_DB_PORT: 3306
+      REDMINE_DB_USERNAME: ${MYSQL_USER:-redmine}
+      REDMINE_DB_PASSWORD: ${MYSQL_PASSWORD:-redminepass}
+      REDMINE_DB_DATABASE: ${MYSQL_DATABASE:-redmine}
+      REDMINE_DB_ENCODING: utf8mb4
+      # 起動時にコア migrate のあとプラグイン migrate も実行
+      REDMINE_PLUGINS_MIGRATE: "1"
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-please-change-me-in-codespaces}
+    ports:
+      - "${REDMINE_PORT:-3000}:3000"
+    volumes:
+      # 添付ファイルだけ永続化。plugins / vendor はイメージに内包するのでマウントしない
+      - redmine-files:/usr/src/redmine/files
+      # Codespaces / ローカルでリポジトリを編集するためのマウント
+      # /usr/src/redmine 自体は上書きしない
+      - .:/workspaces/redmine
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+
+volumes:
+  percona-data:
+  redmine-files:

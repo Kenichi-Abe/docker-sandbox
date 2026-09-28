@@ -9,7 +9,7 @@ RUN microdnf -y install --setopt=install_weak_deps=0 \
 
 # よく使う collection もここで固定する（オフライン対策）
 RUN ANSIBLE_GALAXY_SERVER_TIMEOUT=300 ansible-galaxy collection install \
-      community.general ansible.posix ansible.windows community.windows \
+      community.general:9.5.13 ansible.posix:1.5.4 ansible.windows:2.4.0 community.windows:2.2.0 containers.podman:1.20.2 \
       -p /usr/share/ansible/collections
 
 WORKDIR /workspace
