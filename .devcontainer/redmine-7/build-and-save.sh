@@ -58,8 +58,11 @@ printf 'Codespaces smoke test\n' | docker run --rm -i --platform linux/amd64 \
 echo "Tagging $build_image as $deploy_image"
 docker image tag "$build_image" "$deploy_image"
 
+echo "Removing temporary build tag $build_image"
+docker image rm "$build_image"
+
 echo "Saving $tar_path"
-docker save --output "$tar_path" "$build_image" "$deploy_image"
+docker save --output "$tar_path" "$deploy_image"
 sha256sum "$tar_path"
 
 echo "Image archive ready: $tar_path"
