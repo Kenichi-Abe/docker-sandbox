@@ -46,6 +46,9 @@ docker build --platform linux/amd64 \
 
 echo "Checking Python and MarkItDown"
 docker run --rm --platform linux/amd64 \
+  --entrypoint pandoc \
+  "$build_image" --version
+docker run --rm --platform linux/amd64 \
   --entrypoint /opt/markitdown-venv/bin/python \
   "$build_image" -c 'import markitdown; print(markitdown.__file__)'
 docker run --rm --platform linux/amd64 \
