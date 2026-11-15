@@ -1,5 +1,5 @@
 {
-  "name": "Redmine 7.0 + Percona 8.0",
+  "name": "Redmine 7.0.3 + Percona 8.4.11",
   "dockerComposeFile": ["../docker-compose.yml"],
   "service": "redmine",
   "workspaceFolder": "/workspaces/redmine",
@@ -11,7 +11,7 @@
       "onAutoForward": "notify"
     },
     "3306": {
-      "label": "Percona 8.0",
+      "label": "Percona 8.4.11",
       "onAutoForward": "silent"
     }
   },
