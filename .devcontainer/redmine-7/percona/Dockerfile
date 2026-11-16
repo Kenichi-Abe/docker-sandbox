@@ -1,4 +1,4 @@
-# Percona Server 5.7
+# Percona Serverr:8
 # 公式 percona:5.7 をベースに、Redmine 向けの文字コード設定だけ焼き込む
 FROM percona/percona-server:8.4.11
 

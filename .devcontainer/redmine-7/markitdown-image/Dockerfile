@@ -1,5 +1,8 @@
 FROM docker.io/library/redmine:7.0.3
 
+COPY Gemfile.local /usr/src/redmine/Gemfile.local
+COPY plugins/ /usr/src/redmine/plugins/
+
 ARG PANDOC_VERSION=3.13
 ARG PANDOC_DEB_SHA256=7e3736f255090296ca5d1a14291a76b9b3c43cd385011b1621a4d0c16091a70f
 
@@ -25,3 +28,11 @@ RUN set -eux; \
     echo "${PANDOC_DEB_SHA256}  /tmp/pandoc.deb" | sha256sum --check --strict; \
     apt-get install -y --no-install-recommends /tmp/pandoc.deb; \
     rm -rf /tmp/pandoc.deb /var/lib/apt/lists/*
+
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends build-essential pkg-config; \
+    gosu redmine bundle check || gosu redmine bundle install --jobs "$(nproc)"; \
+    gosu redmine bundle check; \
+    apt-get purge -y --auto-remove build-essential pkg-config; \
+    rm -rf /var/lib/apt/lists/*

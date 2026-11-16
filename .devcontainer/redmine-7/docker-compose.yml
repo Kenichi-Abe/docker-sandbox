@@ -1,9 +1,6 @@
 services:
   db:
-    build:
-      context: ./percona
-      dockerfile: Dockerfile
-    image: percona:8.0
+    image: docker.io/percona/percona-server:8.4.11
     container_name: redmine-db
     restart: unless-stopped
     environment:
@@ -13,7 +10,7 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-redminepass}
       TZ: ${TZ:-Asia/Tokyo}
     volumes:
-      - percona-data:/var/lib/mysql
+      - percona-data-8.4:/var/lib/mysql
     ports:
       - "${PERCONA_PORT:-3306}:3306"
     command:
@@ -70,5 +67,5 @@ services:
       - .:/workspaces/redmine
 
 volumes:
-  percona-data:
+  percona-data-8.4:
   redmine-files:
