@@ -32,7 +32,12 @@ RUN set -eux; \
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends build-essential pkg-config; \
+        echo '# Temporary adapter entries ensure plugin and database adapter gems are resolved during image build.' > /usr/src/redmine/config/database.yml; \
+        for adapter in mysql2 postgresql sqlserver sqlite3; do \
+            printf '%s:\n  adapter: %s\n' "$adapter" "$adapter" >> /usr/src/redmine/config/database.yml; \
+        done; \
     gosu redmine bundle check || gosu redmine bundle install --jobs "$(nproc)"; \
     gosu redmine bundle check; \
+        rm /usr/src/redmine/config/database.yml; \
     apt-get purge -y --auto-remove build-essential pkg-config; \
     rm -rf /var/lib/apt/lists/*
