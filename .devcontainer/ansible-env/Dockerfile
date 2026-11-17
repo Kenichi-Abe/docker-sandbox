@@ -5,7 +5,8 @@ RUN microdnf -y install --setopt=install_weak_deps=0 \
       openssh-clients git \
     && microdnf clean all \
     && pip3.11 install --no-cache-dir \
-      'ansible-core==2.14.2' 'pywinrm'
+      'ansible-core==2.14.2' 'pywinrm' 'openpyxl==3.1.5' \
+    && python3.11 -c "import openpyxl; print(openpyxl.__version__)"
 
 # よく使う collection もここで固定する（オフライン対策）
 RUN ANSIBLE_GALAXY_SERVER_TIMEOUT=300 ansible-galaxy collection install \
