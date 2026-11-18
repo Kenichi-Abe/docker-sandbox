@@ -3,6 +3,12 @@ FROM docker.io/library/redmine:7.0.3
 COPY Gemfile.local /usr/src/redmine/Gemfile.local
 COPY plugins/ /usr/src/redmine/plugins/
 
+RUN if [ -f plugins/redmine_omniauth_oidc/initializers/redmine_omniauth_oidc.rb ]; then \
+        install -m 0644 \
+            plugins/redmine_omniauth_oidc/initializers/redmine_omniauth_oidc.rb \
+            config/initializers/redmine_omniauth_oidc.rb; \
+    fi
+
 ARG PANDOC_VERSION=3.13
 ARG PANDOC_DEB_SHA256=7e3736f255090296ca5d1a14291a76b9b3c43cd385011b1621a4d0c16091a70f
 

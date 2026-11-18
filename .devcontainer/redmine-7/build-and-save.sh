@@ -35,6 +35,11 @@ for plugin_dir in "$plugins_dir"/*; do
     echo "Redmine plugin is missing init.rb: $plugin_dir" >&2
     exit 1
   }
+  registered_id=$(sed -nE '/^[[:space:]]*Redmine::Plugin\.register[[:space:]]+:/ { s/^[[:space:]]*Redmine::Plugin\.register[[:space:]]+:([[:alnum:]_]+).*/\1/p; q; }' "$plugin_dir/init.rb")
+  if [[ -n "$registered_id" && "$registered_id" != "$plugin_id" ]]; then
+    echo "Plugin directory '$plugin_id' does not match init.rb registration '$registered_id'. Rename it to '$registered_id'." >&2
+    exit 1
+  fi
   plugin_ids+=("$plugin_id")
 done
 
@@ -106,6 +111,12 @@ if ((${#plugin_ids[@]})); then
         }
       done
     ' bash "${plugin_ids[@]}"
+fi
+
+if [[ -f "$plugins_dir/redmine_omniauth_oidc/initializers/redmine_omniauth_oidc.rb" ]]; then
+  docker run --rm --platform linux/amd64 \
+    --entrypoint test \
+    "$build_image" -f /usr/src/redmine/config/initializers/redmine_omniauth_oidc.rb
 fi
 
 echo "Tagging $build_image as $deploy_image"
