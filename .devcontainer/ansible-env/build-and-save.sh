@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 repo_root="${REPO_ROOT:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)}"
 dockerfile="$repo_root/Dockerfile"
-image="docker.io/library/ubi-minimal:9.2"
+image="docker.io/library/ansible-ubi-minimal:9.2-built"
 tar_path="$repo_root/ansible-ubi-minimal_9.2.tar"
 tar_tmp="${tar_path}.tmp.$$"
 trap 'rm -f -- "$tar_tmp"' EXIT
