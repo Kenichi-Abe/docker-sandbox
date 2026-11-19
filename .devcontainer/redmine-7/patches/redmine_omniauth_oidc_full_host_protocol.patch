@@ -1,0 +1,11 @@
+diff --git a/lib/omni_auth/dynamic_full_host.rb b/lib/omni_auth/dynamic_full_host.rb
+--- a/lib/omni_auth/dynamic_full_host.rb
++++ b/lib/omni_auth/dynamic_full_host.rb
+@@ -12,4 +12,5 @@
+         uri = URI.parse(URI::Parser.new.escape(url))
+         if uri.scheme.present? && uri.host.present?
+-          result = "#{uri.scheme}://#{uri.host}"
++          protocol = Setting.protocol.presence || uri.scheme
++          result = "#{protocol}://#{uri.host}"
+           result << ":#{uri.port}" unless uri.default_port == uri.port
+           return result

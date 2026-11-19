@@ -129,9 +129,12 @@ docker run --rm --platform linux/amd64 \
   --entrypoint bash \
   "$build_image" -c '
     controller=/usr/src/redmine/plugins/redmine_omniauth_oidc/lib/redmine_omniauth_oidc/account_controller_patch.rb
+    full_host=/usr/src/redmine/plugins/redmine_omniauth_oidc/lib/omni_auth/dynamic_full_host.rb
     initializer=/usr/src/redmine/config/initializers/redmine_omniauth_oidc.rb
     grep -Fq "find_user_by_login_case_insensitive" "$controller"
     ruby -c "$controller"
+    grep -Fq "Setting.protocol.presence || uri.scheme" "$full_host"
+    ruby -c "$full_host"
     grep -Fq "strategy.options[:discovery] = false" "$initializer"
     grep -Fq "discovery_uri = URI.join" "$initializer"
     ruby -c "$initializer"
