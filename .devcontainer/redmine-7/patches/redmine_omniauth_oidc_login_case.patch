@@ -1,0 +1,18 @@
+diff --git a/lib/redmine_omniauth_oidc/account_controller_patch.rb b/lib/redmine_omniauth_oidc/account_controller_patch.rb
+--- a/lib/redmine_omniauth_oidc/account_controller_patch.rb
++++ b/lib/redmine_omniauth_oidc/account_controller_patch.rb
+@@ -155,5 +155,12 @@
+         User.find_by_mail(email) ||
+-          User.find_by_login(uid) ||
+-          User.find_by_login(pref_un)
++          find_user_by_login_case_insensitive(uid) ||
++          find_user_by_login_case_insensitive(pref_un)
+       end
++
++      def find_user_by_login_case_insensitive(login)
++        return if login.blank?
++
++        users = User.where('LOWER(login) = ?', login.downcase).limit(2).to_a
++        users.one? ? users.first : nil
++      end
+ 

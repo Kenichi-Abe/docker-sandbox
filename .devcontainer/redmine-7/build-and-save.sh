@@ -119,6 +119,14 @@ if [[ -f "$plugins_dir/redmine_omniauth_oidc/initializers/redmine_omniauth_oidc.
     "$build_image" -f /usr/src/redmine/config/initializers/redmine_omniauth_oidc.rb
 fi
 
+docker run --rm --platform linux/amd64 \
+  --entrypoint bash \
+  "$build_image" -c '
+    controller=/usr/src/redmine/plugins/redmine_omniauth_oidc/lib/redmine_omniauth_oidc/account_controller_patch.rb
+    grep -Fq "find_user_by_login_case_insensitive" "$controller"
+    ruby -c "$controller"
+  '
+
 echo "Tagging $build_image as $deploy_image"
 docker image tag "$build_image" "$deploy_image"
 

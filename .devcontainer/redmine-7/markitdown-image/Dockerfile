@@ -2,6 +2,7 @@ FROM docker.io/library/redmine:7.0.3
 
 COPY Gemfile.local /usr/src/redmine/Gemfile.local
 COPY plugins/ /usr/src/redmine/plugins/
+COPY patches/redmine_omniauth_oidc_login_case.patch /tmp/redmine_omniauth_oidc_login_case.patch
 
 RUN if [ -f plugins/redmine_omniauth_oidc/initializers/redmine_omniauth_oidc.rb ]; then \
         install -m 0644 \
@@ -37,7 +38,9 @@ RUN set -eux; \
 
 RUN set -eux; \
     apt-get update; \
-    apt-get install -y --no-install-recommends build-essential pkg-config; \
+    apt-get install -y --no-install-recommends build-essential patch pkg-config; \
+    patch --batch --forward -p1 -d /usr/src/redmine/plugins/redmine_omniauth_oidc < /tmp/redmine_omniauth_oidc_login_case.patch; \
+    rm /tmp/redmine_omniauth_oidc_login_case.patch; \
         echo '# Temporary adapter entries ensure plugin and database adapter gems are resolved during image build.' > /usr/src/redmine/config/database.yml; \
         for adapter in mysql2 postgresql sqlserver sqlite3; do \
             printf '%s:\n  adapter: %s\n' "$adapter" "$adapter" >> /usr/src/redmine/config/database.yml; \
@@ -45,5 +48,5 @@ RUN set -eux; \
     gosu redmine bundle check || gosu redmine bundle install --jobs "$(nproc)"; \
     gosu redmine bundle check; \
         rm /usr/src/redmine/config/database.yml; \
-    apt-get purge -y --auto-remove build-essential pkg-config; \
+    apt-get purge -y --auto-remove build-essential patch pkg-config; \
     rm -rf /var/lib/apt/lists/*
