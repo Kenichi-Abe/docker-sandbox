@@ -1,0 +1,39 @@
+diff --git a/config/initializers/redmine_omniauth_oidc.rb b/config/initializers/redmine_omniauth_oidc.rb
+--- a/config/initializers/redmine_omniauth_oidc.rb
++++ b/config/initializers/redmine_omniauth_oidc.rb
+@@ -3,3 +3,7 @@
+ # This setup proc is called on every auth request, allowing settings to be
+ # changed in the admin UI without restarting the server.
++require 'json'
++require 'net/http'
++require 'uri'
++
+ setup_proc = Proc.new do |env|
+@@ -8,4 +8,26 @@
+   strategy.options[:issuer]    = RedmineOmniauthOidc.oidc_issuer_url
+-  strategy.options[:discovery] = true
++  # Fetch discovery metadata directly so HTTP issuers keep their scheme.
++  issuer_url = strategy.options[:issuer].to_s.sub(%r{/+\z}, '')
++  discovery_uri = URI.join("#{issuer_url}/", '.well-known/openid-configuration')
++  discovery_response = Net::HTTP.get_response(discovery_uri)
++  unless discovery_response.is_a?(Net::HTTPSuccess)
++    raise "OIDC discovery failed with HTTP #{discovery_response.code}"
++  end
++  discovery = JSON.parse(discovery_response.body)
++  unless discovery['issuer'] == issuer_url
++    raise 'OIDC discovery issuer does not match configured issuer'
++  end
++  strategy.options[:discovery] = false
+   strategy.options[:scope]     = RedmineOmniauthOidc.oidc_scope_array
+   strategy.options[:uid_field] = RedmineOmniauthOidc.oidc_uid_field
++
++  client_options = strategy.options[:client_options]
++  issuer_uri = URI.parse(issuer_url)
++  client_options[:scheme] = issuer_uri.scheme
++  client_options[:host] = issuer_uri.host
++  client_options[:port] = issuer_uri.port
++
++  %w[authorization_endpoint token_endpoint userinfo_endpoint jwks_uri end_session_endpoint].each do |key|
++    value = discovery[key]
++    client_options[key.to_sym] = value if value.present?
++  end

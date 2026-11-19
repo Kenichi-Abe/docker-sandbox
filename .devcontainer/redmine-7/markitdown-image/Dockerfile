@@ -3,6 +3,7 @@ FROM docker.io/library/redmine:7.0.3
 COPY Gemfile.local /usr/src/redmine/Gemfile.local
 COPY plugins/ /usr/src/redmine/plugins/
 COPY patches/redmine_omniauth_oidc_login_case.patch /tmp/redmine_omniauth_oidc_login_case.patch
+COPY patches/redmine_omniauth_oidc_http_discovery.patch /tmp/redmine_omniauth_oidc_http_discovery.patch
 
 RUN if [ -f plugins/redmine_omniauth_oidc/initializers/redmine_omniauth_oidc.rb ]; then \
         install -m 0644 \
@@ -40,7 +41,8 @@ RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends build-essential patch pkg-config; \
     patch --batch --forward -p1 -d /usr/src/redmine/plugins/redmine_omniauth_oidc < /tmp/redmine_omniauth_oidc_login_case.patch; \
-    rm /tmp/redmine_omniauth_oidc_login_case.patch; \
+    patch --batch --forward -p1 -d /usr/src/redmine < /tmp/redmine_omniauth_oidc_http_discovery.patch; \
+    rm /tmp/redmine_omniauth_oidc_login_case.patch /tmp/redmine_omniauth_oidc_http_discovery.patch; \
         echo '# Temporary adapter entries ensure plugin and database adapter gems are resolved during image build.' > /usr/src/redmine/config/database.yml; \
         for adapter in mysql2 postgresql sqlserver sqlite3; do \
             printf '%s:\n  adapter: %s\n' "$adapter" "$adapter" >> /usr/src/redmine/config/database.yml; \

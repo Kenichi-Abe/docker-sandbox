@@ -27,6 +27,12 @@ docker info >/dev/null
 mkdir -p "$(dirname -- "$tar_path")"
 mkdir -p "$plugins_dir"
 
+oidc_initializer="$plugins_dir/redmine_omniauth_oidc/initializers/redmine_omniauth_oidc.rb"
+[[ -f "$oidc_initializer" ]] || {
+  echo "redmine_omniauth_oidc initializer is required to build the Redmine image." >&2
+  exit 1
+}
+
 plugin_ids=()
 for plugin_dir in "$plugins_dir"/*; do
   [[ -d "$plugin_dir" ]] || continue
@@ -123,8 +129,12 @@ docker run --rm --platform linux/amd64 \
   --entrypoint bash \
   "$build_image" -c '
     controller=/usr/src/redmine/plugins/redmine_omniauth_oidc/lib/redmine_omniauth_oidc/account_controller_patch.rb
+    initializer=/usr/src/redmine/config/initializers/redmine_omniauth_oidc.rb
     grep -Fq "find_user_by_login_case_insensitive" "$controller"
     ruby -c "$controller"
+    grep -Fq "strategy.options[:discovery] = false" "$initializer"
+    grep -Fq "discovery_uri = URI.join" "$initializer"
+    ruby -c "$initializer"
   '
 
 echo "Tagging $build_image as $deploy_image"
